@@ -32,6 +32,7 @@ class Coverage3(Plugin):
     """
     coverTests = False
     coverPackages = None
+    coverDataFile = None
     score = 200
     status = {}
     _cov = None
@@ -39,7 +40,7 @@ class Coverage3(Plugin):
     def _get_cov(self):
         if self._cov is None:
             import coverage
-            self._cov = coverage.coverage(branch=self.coverBranch, cover_pylib=False)
+            self._cov = coverage.coverage(branch=self.coverBranch, cover_pylib=False, data_file=self.coverDataFile)
         return self._cov
     cov = property(_get_cov)
 
@@ -60,6 +61,11 @@ class Coverage3(Plugin):
                           dest="cover_erase",
                           help="Erase previously collected coverage "
                           "statistics before run")
+        parser.add_option("--cover3-data-file", action="store",
+                          default=env.get('NOSE_COVER_DATA_FILE'),
+                          dest="cover_data_file",
+                          help="File to save collected coverage in "
+                          "[NOSE_COVER_DATA_FILE]")
         parser.add_option("--cover3-tests", action="store_true",
                           dest="cover_tests",
                           default=env.get('NOSE_COVER_TESTS'),
@@ -125,6 +131,7 @@ class Coverage3(Plugin):
                 return
         self.conf = config
         self.coverErase = options.cover_erase
+        self.coverDataFile = options.cover_data_file
         self.coverTests = options.cover_tests
         self.coverBranch = options.cover_branch
         self.coverExclude = options.cover_exclude or []
@@ -165,6 +172,8 @@ class Coverage3(Plugin):
         """
         log.debug("Coverage report")
         self.cov.stop()
+        if self.coverDataFile:
+            self.cov.save()
         modules = [ module
                     for name, module in sys.modules.items()
                     if self.wantModuleCoverage(name, module)
